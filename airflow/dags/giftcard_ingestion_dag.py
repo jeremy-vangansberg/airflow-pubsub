@@ -3,23 +3,20 @@ from airflow.decorators import dag, task
 from airflow.providers.google.cloud.operators.pubsub import PubSubPullOperator
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 from airflow.datasets import Dataset
+from airflow.models import Variable
+
 
 from datetime import datetime, timedelta
 import json
+import base64
 
 from airflow.hooks.base import BaseHook
-import json
 
-def get_project_id_from_conn(conn_id="gcp_id"):
-    conn = BaseHook.get_connection(conn_id)
-    extras = conn.extra_dejson
-    return extras.get("extra__google_cloud_platform__project")
-
-PROJECT_ID = get_project_id_from_conn(conn_id="gcp_id")
+PROJECT_ID = Variable.get("project-id")
 
 # Datasets pour déclencher le DAG de consolidation
-eu_dataset = Dataset("bq://{PROJECT_ID}.giftcard_transactions.transactions_eu")
-us_dataset = Dataset("bq://{PROJECT_ID}.giftcard_transactions.transactions_us")
+eu_dataset = Dataset(f"bq://{PROJECT_ID}.giftcard_transactions.transactions_eu")
+us_dataset = Dataset(f"bq://{PROJECT_ID}.giftcard_transactions.transactions_us")
 
 @dag(
     dag_id="giftcard_ingestion_dag",
@@ -35,37 +32,41 @@ def giftcard_ingestion():
         project_id=PROJECT_ID,
         subscription='giftcard-transactions-sub',
         max_messages=5,
-        ack_messages=True,
+        ack_messages=False,
         gcp_conn_id='gcp_id'
     )
+    
 
     @task
     def transform_messages(**context):
-        pulled_messages = context['ti'].xcom_pull(task_ids='pull_giftcard_messages')
-        transformed = []
-        if not pulled_messages:
+            pulled_messages = context['ti'].xcom_pull(task_ids='pull_giftcard_messages')
+            transformed = []
+            if not pulled_messages:
+                return transformed
+            for msg in pulled_messages:
+                try:
+                    raw_data = msg['message']['data']
+                    decoded_data = base64.b64decode(raw_data).decode('utf-8')
+                    data = json.loads(decoded_data)
+                    purchase_date = datetime.strptime(data['purchase_date'], "%Y-%m-%dT%H:%M:%SZ")
+                    expiry_date = purchase_date + timedelta(days=365)
+                    transformed.append({
+                        "card_id": data["transaction_id"],
+                        "region": data["region"],
+                        "amount": int(data["amount"]),
+                        "currency": data["currency"],
+                        "purchase_date": data["purchase_date"],
+                        "expiry_date": expiry_date.isoformat()
+                    })
+                except Exception as e:
+                    print(f"Erreur de parsing message: {msg} - {e}")
             return transformed
-
-        for msg in pulled_messages:
-            data = json.loads(msg['message']['data'])
-            purchase_date = datetime.strptime(data['purchase_date'], "%Y-%m-%dT%H:%M:%SZ")
-            expiry_date = purchase_date + timedelta(days=365)
-
-            transformed.append({
-                "card_id": data["transaction_id"],
-                "region": data["region"],
-                "amount": int(data["amount"]),
-                "currency": data["currency"],
-                "purchase_date": data["purchase_date"],
-                "expiry_date": expiry_date.isoformat()
-            })
-        return transformed
 
     @task
     def build_sql(records):
         if not records:
             return ""
-
+        print('------------------',PROJECT_ID)
         queries = []
         for row in records:
             table = "transactions_eu" if row["region"] == "EU" else "transactions_us"
@@ -82,6 +83,8 @@ def giftcard_ingestion():
 
     insert_query = BigQueryInsertJobOperator(
         task_id='insert_into_bigquery',
+        gcp_conn_id='gcp_id',
+        project_id=PROJECT_ID,
         configuration={
             "query": {
                 "query": "{{ ti.xcom_pull(task_ids='build_sql') }}",
