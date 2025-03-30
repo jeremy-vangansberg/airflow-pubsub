@@ -76,7 +76,7 @@ AIRFLOW_PASS=votre_password
 
 ---
 
-## 🚀 Fonctionnement Global (Mermaid)
+## 🚀 Fonctionnement Global
 
 ```mermaid
 graph TD
@@ -88,7 +88,19 @@ graph TD
 ```
 
 ---
+## 🧪 Simuler des messages dans Pub/Sub
 
+Exécutez ces commandes depuis le dossier `terraform`:
+
+```bash
+./scripts/message_eu.sh
+```
+
+```bash
+./scripts/message_us.sh
+```
+
+---
 ## 🧪 Vérifications
 
 - Consultez les logs de la Cloud Function sur [Google Cloud Console](https://console.cloud.google.com/functions).
@@ -106,23 +118,6 @@ graph TD
 
 ---
 
-## 📂 Structure du Projet
-
-```
-.
-├── dags
-│   └── giftcard_ingestion_dag.py
-├── scripts
-│   ├── deploy_trigger_airflow.sh
-│   └── trigger_airflow_dag
-│       ├── .env
-│       └── main.py
-└── terraform
-    ├── main.tf
-    └── variables.tf
-```
-
----
 
 ## 📝 Remarques
 
@@ -133,8 +128,3 @@ pkill ngrok
 ```
 
 - Ne publiez jamais vos secrets (fichiers `.env`) dans le repository Git.
-
----
-
-**Bon déploiement 🚀 !**
-
