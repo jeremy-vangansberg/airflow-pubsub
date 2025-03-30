@@ -1,6 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,terraform,macos,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,terraform,macos,linux
 
+
+airflow/logs/*
 command.md
 
 ### Linux ###
