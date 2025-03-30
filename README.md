@@ -5,3 +5,5 @@ Installation de docker
 Set up un compte GCP
 
 Le docker compose provient de la documentation Airflow
+
+ngrok pour simuler un endpoint depuis le local

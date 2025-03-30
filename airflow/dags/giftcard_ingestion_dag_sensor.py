@@ -1,6 +1,6 @@
 from airflow import DAG
 from airflow.decorators import dag, task
-from airflow.providers.google.cloud.operators.pubsub import PubSubPullOperator
+from airflow.providers.google.cloud.sensors.pubsub import PubSubPullSensor
 from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator
 from airflow.datasets import Dataset
 from airflow.models import Variable
@@ -17,7 +17,7 @@ eu_dataset = Dataset(f"bq://{PROJECT_ID}.giftcard_transactions.transactions_eu")
 us_dataset = Dataset(f"bq://{PROJECT_ID}.giftcard_transactions.transactions_us")
 
 @dag(
-    dag_id="giftcard_ingestion_dag",
+    dag_id="giftcard_ingestion_dag_with_sensor",
     start_date=datetime(2024, 1, 1),
     schedule=None,
     catchup=False,
@@ -25,12 +25,12 @@ us_dataset = Dataset(f"bq://{PROJECT_ID}.giftcard_transactions.transactions_us")
 )
 def giftcard_ingestion():
 
-    pull_messages = PubSubPullOperator(
+    pull_messages = PubSubPullSensor(
         task_id='pull_giftcard_messages',
         project_id=PROJECT_ID,
         subscription='giftcard-transactions-sub',
         max_messages=5,
-        ack_messages=False,
+        ack_messages=True,
         gcp_conn_id='gcp-id'
     )
     
