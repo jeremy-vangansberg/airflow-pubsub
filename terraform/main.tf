@@ -18,11 +18,6 @@ resource "google_pubsub_topic" "giftcard_transactions" {
   project = var.project_id
 }
 
-resource "google_pubsub_topic" "marketing_notifications" {
-  name    = "marketing-notifications"
-  project = var.project_id
-}
-
 # Pub/Sub Subscriptions
 resource "google_pubsub_subscription" "giftcard_transactions_sub" {
   name    = "giftcard-transactions-sub"
@@ -35,7 +30,7 @@ resource "google_bigquery_dataset" "giftcard_transactions" {
   dataset_id                  = "giftcard_transactions"
   project                     = var.project_id
   location                    = var.region
-  delete_contents_on_destroy  = true
+  delete_contents_on_destroy  = false
 }
 
 # BigQuery Tables
@@ -43,6 +38,7 @@ resource "google_bigquery_table" "transactions_eu" {
   dataset_id = google_bigquery_dataset.giftcard_transactions.dataset_id
   table_id   = "transactions_eu"
   project    = var.project_id
+  deletion_protection=false
 
   schema = <<EOF
 [
@@ -84,6 +80,7 @@ resource "google_bigquery_table" "transactions_us" {
   dataset_id = google_bigquery_dataset.giftcard_transactions.dataset_id
   table_id   = "transactions_us"
   project    = var.project_id
+  deletion_protection=false
 
   schema = <<EOF
 [
@@ -125,6 +122,7 @@ resource "google_bigquery_table" "transactions_global" {
   dataset_id = google_bigquery_dataset.giftcard_transactions.dataset_id
   table_id   = "transactions_global"
   project    = var.project_id
+  deletion_protection=false
 
   schema = <<EOF
 [
