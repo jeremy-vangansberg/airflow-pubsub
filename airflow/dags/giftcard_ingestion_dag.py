@@ -30,7 +30,7 @@ def giftcard_ingestion():
         project_id=PROJECT_ID,
         subscription='giftcard-transactions-sub',
         max_messages=5,
-        ack_messages=False,
+        ack_messages=True,
         gcp_conn_id='gcp-id'
     )
     
@@ -64,7 +64,6 @@ def giftcard_ingestion():
     def build_sql(records):
         if not records:
             return ""
-        print('------------------',PROJECT_ID)
         queries = []
         for row in records:
             table = "transactions_eu" if row["region"] == "EU" else "transactions_us"

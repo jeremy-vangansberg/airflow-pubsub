@@ -3,6 +3,7 @@
 
 
 airflow/logs/*
+airflow/configs/*
 command.md
 
 ### Linux ###

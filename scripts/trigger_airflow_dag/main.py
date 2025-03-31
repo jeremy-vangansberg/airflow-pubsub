@@ -12,14 +12,22 @@ def trigger_dag(event, context):
         payload = base64.b64decode(event["data"]).decode("utf-8")
         print(f"Payload reçu: {payload}")
 
+        # On ignore volontairement le message si un champ est manquant
+        try:
+            conf = json.loads(payload)
+        except Exception as parse_err:
+            print(f"⚠️ Message invalide ignoré: {parse_err}")
+            return  # ✅ terminé = ack automatique
+
         response = requests.post(
             AIRFLOW_URL,
             auth=AIRFLOW_AUTH,
             headers={"Content-Type": "application/json"},
-            json={"conf": json.loads(payload)}
+            json={"conf": conf}
         )
 
         print(f"Status: {response.status_code}, body: {response.text}")
+
     except Exception as e:
-        print(f"Erreur: {e}")
-        raise
+        print(f"❌ Erreur générale: {e}")
+        raise  # ❌ provoque un échec → pas ack → retry du message

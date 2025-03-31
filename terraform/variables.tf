@@ -9,3 +9,11 @@ variable "region" {
   type        = string
   default     = "europe-west1"
 }
+
+variable "service_account_name" {
+  default = "airflow-service-account"
+}
+
+variable "key_path" {
+  default = "../airflow/config/gcp.json"
+}

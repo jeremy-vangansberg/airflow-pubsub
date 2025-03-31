@@ -22,9 +22,21 @@ def giftcard_consolidation():
     
     sql_consolidation = f"""
     INSERT INTO `illicado-demo.giftcard_transactions.transactions_global`
-    SELECT * FROM `illicado-demo.giftcard_transactions.transactions_eu`
-    UNION ALL
-    SELECT * FROM `illicado-demo.giftcard_transactions.transactions_us`
+    WITH deduplicated AS (
+        SELECT *
+        FROM (
+            SELECT *,
+                ROW_NUMBER() OVER (PARTITION BY card_id ORDER BY purchase_date DESC) AS row_num
+            FROM (
+                SELECT * FROM `illicado-demo.giftcard_transactions.transactions_eu`
+                UNION ALL
+                SELECT * FROM `illicado-demo.giftcard_transactions.transactions_us`
+            )
+        )
+        WHERE row_num = 1
+    )
+    SELECT card_id, region, amount, currency, purchase_date, expiry_date
+    FROM deduplicated
     """
 
     consolidate_transactions = BigQueryInsertJobOperator(

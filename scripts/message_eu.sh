@@ -1,6 +1,6 @@
 gcloud pubsub topics publish giftcard-transactions \
   --message='{
-    "transaction_id": "EU001",
+    "transaction_id": "EU006",
     "amount": 100,
     "currency": "EUR",
     "region": "EU",
